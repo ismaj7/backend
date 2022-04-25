@@ -1,0 +1,9 @@
+{
+  "servidor": "172.16.10.35",
+  "baseDatos": "SEBECO",
+  "usuario": "itb",
+  "password": "ITB%itb01",
+  "puerto": 3306,
+  "autorizacion": "",
+  "tipoConexion": "MySql"
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Annotation profile for gestionDocumental" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/systems/manifold/manifold-ext/2021.1.10/manifold-ext-2021.1.10.jar" />
+          <entry name="$MAVEN_REPOSITORY$/systems/manifold/manifold/2021.1.10/manifold-2021.1.10.jar" />
+          <entry name="$MAVEN_REPOSITORY$/systems/manifold/manifold-rt/2021.1.10/manifold-rt-2021.1.10.jar" />
+          <entry name="$MAVEN_REPOSITORY$/systems/manifold/manifold-util/2021.1.10/manifold-util-2021.1.10.jar" />
+          <entry name="$MAVEN_REPOSITORY$/systems/manifold/manifold-ext-rt/2021.1.10/manifold-ext-rt-2021.1.10.jar" />
+        </processorPath>
+        <module name="gestionDocumental" />
+        <module name="proyectoBase" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="gestionDocumental" target="11" />
+      <module name="proyectoBase" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-Xplugin:Manifold " />
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="gestionDocumental" options="-parameters -Xplugin:Manifold" />
+      <module name="proyectoBase" options="-parameters -Xplugin:Manifold" />
+    </option>
+  </component>
+</project>
