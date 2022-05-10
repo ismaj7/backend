@@ -23,7 +23,7 @@
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_STRING" value="-Xplugin:Manifold " />
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-Xplugin:Manifold  -processorpath C:\Users\IBAHMANE\.m2\repository\systems\manifold\manifold-ext-rt\2021.1.10\manifold-ext-rt-2021.1.10.jar;C:\Users\IBAHMANE\.m2\repository\systems\manifold\manifold-rt\2021.1.10\manifold-rt-2021.1.10.jar;C:\Users\IBAHMANE\.m2\repository\systems\manifold\manifold-util\2021.1.10\manifold-util-2021.1.10.jar;C:\Users\IBAHMANE\.m2\repository\systems\manifold\manifold-ext\2021.1.10\manifold-ext-2021.1.10.jar;C:\Users\IBAHMANE\.m2\repository\systems\manifold\manifold\2021.1.10\manifold-2021.1.10.jar" />
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="gestionDocumental" options="-parameters -Xplugin:Manifold" />
       <module name="proyectoBase" options="-parameters -Xplugin:Manifold" />
