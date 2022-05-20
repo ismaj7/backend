@@ -1,38 +1,49 @@
 package com.itbacking.itb.gestionDocumental.MotorSincros.Clases;
 
 import com.itbacking.core.collection.Diccionario;
+import org.apache.commons.math3.geometry.spherical.oned.Arc;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
-public class FormatoXmlQR {
+public class ArchivoXmlQR {
 
     public enum FormatoXML{Desconocido, Avanbox, ITB}
     public FormatoXML formato;
-    public String mTextoQR;
-    public final String saltoDeLinea = "\r\n";
-    public Diccionario codigosQRITB = new Diccionario();
-    public Diccionario valores = new Diccionario();
+    private String mTextoQR;
+    public static final String saltoDeLinea = "\r\n";
+    private static Diccionario codigosQRITB = new Diccionario();
+    public Map<String,String> valores = new Diccionario();
     public boolean error;
     public String descripcionError;
 
+    private static boolean instanciado = false;
+
     //region Constructores:
 
-    public FormatoXmlQR() { //Para ITB
-        codigosQRITB.asignar("1", "ORIGEN");
-        codigosQRITB.asignar("2", "CLAVE");
-        codigosQRITB.asignar("3", "TIPO");
-        codigosQRITB.asignar("4", "MODO");
-        codigosQRITB.asignar("5", "ADICIONAL");
-        codigosQRITB.asignar("6", "EXPEDIENTE1");
-        codigosQRITB.asignar("7", "TIPOEXPEDIENTE1");
-        codigosQRITB.asignar("8", "EXPEDIENTE2");
-        codigosQRITB.asignar("9", "TIPOEXPEDIENTE2");
-        codigosQRITB.asignar("A", "BD");
+    private ArchivoXmlQR() {
+
+        if(!instanciado) {
+            codigosQRITB.asignar("1", "ORIGEN");
+            codigosQRITB.asignar("2", "CLAVE");
+            codigosQRITB.asignar("3", "TIPO");
+            codigosQRITB.asignar("4", "MODO");
+            codigosQRITB.asignar("5", "ADICIONAL");
+            codigosQRITB.asignar("6", "EXPEDIENTE1");
+            codigosQRITB.asignar("7", "TIPOEXPEDIENTE1");
+            codigosQRITB.asignar("8", "EXPEDIENTE2");
+            codigosQRITB.asignar("9", "TIPOEXPEDIENTE2");
+            codigosQRITB.asignar("A", "BD");
+
+            instanciado = true;
+        }
+
     }
 
-    public FormatoXmlQR(String pTextoQR) { //Para Avanbox
+    public ArchivoXmlQR(String pTextoQR) { //Para Avanbox
 
+        this();
         this.formato = formatoDelQR(pTextoQR);
         if(this.formato == FormatoXML.Avanbox)
             parsearFormatoAvanbox(pTextoQR);
@@ -42,11 +53,17 @@ public class FormatoXmlQR {
         mTextoQR = pTextoQR;
     }
 
+    public ArchivoXmlQR(Map<String,String> valores) { //Para Avanbox
+        this();
+        this.formato = FormatoXML.Avanbox;
+        this.valores=valores;
+    }
+
     //endregion
 
     //region Traídos desde ServidorQR.cs:
 
-    public FormatoXML formatoDelQR(String pTextoQR) {
+    public static FormatoXML formatoDelQR(String pTextoQR) {
         if (pTextoQR.comienzaPor("<T\tsc_add>" + saltoDeLinea)) {
             return FormatoXML.Avanbox;
         } else if (pTextoQR.comienzaPor("ITB" + saltoDeLinea)) {

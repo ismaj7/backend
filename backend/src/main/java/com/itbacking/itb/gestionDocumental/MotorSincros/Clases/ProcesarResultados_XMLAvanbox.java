@@ -1,6 +1,8 @@
-package com.itbacking.itb.gestionDocumental.MotorSincros;
+package com.itbacking.itb.gestionDocumental.MotorSincros.Clases;
 
 import com.itbacking.core.collection.Coleccion;
+import com.itbacking.db.connector.ConectorDb;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados_Sincro;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -10,7 +12,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
-
 public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro {
 
     private String rutaCarpetaResultado;
@@ -18,14 +19,13 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro 
     @Override
     public void procesarResultados(Map<String, Object> fila, List<ResultadosLectura> resultados) throws Exception {
 
-        "Generar Pares PDF-XML".cabeceraDeLog().log();
+        "Procesar resultados para Avanbox".cabeceraDeLog().log();
 
         //Leemos la configuración de la base de datos:
         "Leyendo configuración...".log();
         var conf = fila.get("confProcesarResultado").aCadena().aObjeto(Coleccion.class);
         leerConfiguracion(conf);
 
-        //TODO esto es un poco redundante...
         //Leemos también de la otra columna la ruta temporal para eliminarla al final.
         //No hace falta hacer comprobaciones porque esto ya lo hace ProcesarQR.java
         var conf2 = fila.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
@@ -44,11 +44,10 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro 
 
         rutaCarpetaResultado.log("Carpeta de resultados");
 
-        "Eliminando archivos temporales...".log();
-        limpiarCarpetaDocumentosAProcesar(rutaCarpetaTemporal + "\\documentosAProcesar");
-        "Eliminados con éxito.".log();
+        //Eliminamos el pdf de la carpeta documentos a procesar
+        limpiarCarpetadocumentoEnProceso(rutaCarpetaTemporal + "\\documentoEnProceso");
 
-        "Fin de Generar Pares PDF-XML".cabeceraDeLog().log();
+        "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
 
     }
 
@@ -59,31 +58,17 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro 
             //La ruta del archivo temporal que previamente ha generado MotorSincros y que contiene los QRs válidos:
             var rutaPDFTemporal = resultado.getRutaArchivo();
 
-            //Lista de String con los valores que se han leído de los QR(s).
-            var valorQR = resultado.getValorQR();
-
-            var archivoXML = new ArchivoXmlQR(valorQR);
-
             //Lo que escribiremos en el archivo XML.
-            var xmlContenido = "";
+            var etiquetas=resultado.etiquetas;
+            var xmlContenido = new ArchivoXmlQR(etiquetas).obtenerXMLAvanbox();
 
-            switch (archivoXML.formato) {
-                case Avanbox:
-                    xmlContenido = archivoXML.obtenerXMLAvanbox();
-                    break;
-                case ITB:
-                    xmlContenido = valorQR;
-                    break;
-                case Desconocido:
-                    ("El formato " + archivoXML.formato + " es desconocido.").log();
-                    break;
-            }
-
-            var nombreArchivoFinal = archivoXML.valores.get("TIPO") + "_" + archivoXML.valores.get("EXPEDIENTE1");
+            var nombreArchivoFinal = etiquetas.get("TIPO") + "_" + etiquetas.get("EXPEDIENTE1");
 
             ("Generando XML...").logDebug();
+            nombreArchivoFinal.logDebug("Archivo");
+            xmlContenido.logDebug("Contenido");
             generarXMLs(xmlContenido, nombreArchivoFinal);
-            "XML(s) generado(s) con éxito.".logDebug();
+            "XML generado(s) con éxito.".logDebug();
 
             "Moviendo PDF válido a la ruta final...".logDebug();
             moverPDFRutaFinal(rutaPDFTemporal, nombreArchivoFinal);
@@ -100,6 +85,7 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro 
         }
 
         var rutaPDFFinal = archivoPDF.nombreCompletoConRuta();
+        rutaPDFFinal.logDebug("Ruta destino");
 
         var origen = Paths.get(rutaPDFTemporal);
         var destino = Paths.get(rutaPDFFinal);
@@ -175,11 +161,11 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro 
 
     }
 
-    private void limpiarCarpetaDocumentosAProcesar(String rutaCarpeta) throws IOException {
+    private void limpiarCarpetadocumentoEnProceso(String rutaCarpeta) throws IOException {
 
-        var carpetaDocumentosAProcesar = new File(rutaCarpeta);
+        var carpetaDocumentoEnProceso = new File(rutaCarpeta);
 
-        for(var archivo : carpetaDocumentosAProcesar.listFiles()) {
+        for(var archivo : carpetaDocumentoEnProceso.listFiles()) {
             archivo.delete();
         }
 

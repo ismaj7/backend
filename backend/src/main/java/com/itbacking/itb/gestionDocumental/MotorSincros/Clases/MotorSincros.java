@@ -1,4 +1,4 @@
-package com.itbacking.itb.gestionDocumental.MotorSincros;
+package com.itbacking.itb.gestionDocumental.MotorSincros.Clases;
 
 import com.itbacking.core.App;
 import com.itbacking.core.collection.Coleccion;
@@ -8,6 +8,8 @@ import com.itbacking.db.connection.Conexion;
 import com.itbacking.db.connection.ConfiguracionConexion;
 import com.itbacking.db.connection.TipoConexion;
 import com.itbacking.db.connector.ConectorDb;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados_Sincro;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarSincro;
 import com.itbacking.notify.Notificacion;
 import jakarta.mail.MessagingException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -132,7 +134,7 @@ public class MotorSincros {
 
             //Procesamos los resultados.
             interfazProcesarResultados.procesarResultados(fila, resultados);
-//
+
 //            "Enviando notifiacion(es)...".log();
 //            var confNotificacion = fila.get("confNotificacion").aCadena().aObjeto(Coleccion.class);
 //            confNotificacion.asignar("usuario", "scara@itbacking.com");

@@ -2,16 +2,16 @@ package com.itbacking.gestionDocumental;
 
 import com.itbacking.core.App;
 import com.itbacking.core.collection.Coleccion;
-import com.itbacking.itb.gestionDocumental.MotorSincros.MotorSincros;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Clases.MotorSincros;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @RunWith(App.class)
 @SpringBootTest
 public class TestProyecto {
-
     @Test
     public void mainTest() throws Exception {
 
@@ -25,7 +25,7 @@ public class TestProyecto {
         conexion.asignar("puertoConexion", "3306");                            //SQLNonTransientConnectionException
 
         var motorSincros = new MotorSincros(conexion);
-        motorSincros.iniciar();
+        motorSincros.procesarSincros();
 
     }
 

@@ -1,4 +1,6 @@
-package com.itbacking.itb.gestionDocumental.MotorSincros;
+package com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces;
+
+import com.itbacking.itb.gestionDocumental.MotorSincros.Clases.ResultadosLectura;
 
 import java.util.List;
 import java.util.Map;
