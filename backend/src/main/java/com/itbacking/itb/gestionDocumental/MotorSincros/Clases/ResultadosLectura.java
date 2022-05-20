@@ -6,17 +6,17 @@ public class ResultadosLectura {
     //Data class para el manejo de los resultados de la lectura de QRs.
 
     private String rutaArchivo;
-    private List<String> valoresQR;
+    private String valorQR;
 
-    public ResultadosLectura(String rutaArchivo, List<String> valorQRs) {
+    public ResultadosLectura(String rutaArchivo, String valorQRs) {
 
         this.rutaArchivo = rutaArchivo;
-        this.valoresQR = valorQRs;
+        this.valorQR = valorQRs;
 
     }
 
-    public List<String> getValoresQR() {
-        return valoresQR;
+    public String getValorQR() {
+        return valorQR;
     }
 
     public String getRutaArchivo() {
