@@ -17,7 +17,6 @@ import java.util.Map;
 
 public class ProcesarQR implements ProcesarSincro {
 
-    private String rutaCarpetaInicial;
     private String rutaCarpetaTemporal;
     private List<String> extensiones;
     private Integer tamañoMaxProcesarEnMemoria;
@@ -25,180 +24,84 @@ public class ProcesarQR implements ProcesarSincro {
 
     private Diccionario formatos = new Diccionario();
     @Override
-    public List<ResultadosLectura> procesarArchivos(Map<String, Object> fila) throws Exception {
+    public List<ResultadoLectura> analizarDocumento(File archivo, Map<String, Object> fila) throws Exception {
 
-//        var resultadoFinal = new ArrayList<ResultadosLectura>();
-//        resultadoFinal.
-
-//        formatos.asignar("ITB", "ITB");
-//        formatos.asignar("AVANBOX", "<T\tsc_add>");
-
-        //De la fila que nos llegan cogemos solo los parametros que nos interesan:
-        rutaCarpetaInicial = fila.get("carpetaOrigen").aCadena();
         var conf = fila.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
         leerConfiguracion(conf);
 
-        //Creamos la carpeta temporal si no existe:
-        crearCarpetaTemporal();
+        return analizarArchivo(archivo);
 
-        //Buscamos los archivos para analizar:
-        "Recopilando archivos a analizar...".logDebug();
+    }
 
-        List<File> archivosParaAnalizar;
+    private List<ResultadoLectura> analizarArchivo(File archivo) throws IOException {
 
-        //Primero los buscaremos en la carpeta temporal por si se ha quedado a medias la sincronización.
-        archivosParaAnalizar = listarArchivosEnCarpeta(rutaCarpetaTemporal + "\\documentoEnProceso");
-        var ruta = rutaCarpetaTemporal;//Esta cadena la usaremos para montar el log
+        var resultadoFinal = new ArrayList<ResultadoLectura>();
 
-        //Si en la carpeta temporal hay pdfs, los procesamos:
-        if(!archivosParaAnalizar.isEmpty()) {
-            analizarArchivosPendientes(archivosParaAnalizar);
+        App.agregarRegistroLog(procesarQRLog);
 
-        }
+        //Movemos el archivo a nuestra carpeta.
+        var archivoAnalizando = new File(rutaCarpetaTemporal + "\\documentoEnProceso\\" + archivo.nombreConExtension());
+        archivo.renameTo(archivoAnalizando);
+        //Extraemos del archivo la info que necesitamos:
+        var nombreDelArchivo = archivoAnalizando.nombreConExtension();
+        Long tamañoArchivoBytes =  archivoAnalizando.length();
+        var tamañoArchivo = tamañoArchivoBytes.aDouble()/1000000; // dividimos entre 1000000 para pasarlo a MB
 
-        //Después de procesar la carpeta temporal, volvemos a la inicial a buscar pdfs.
-        archivosParaAnalizar = listarArchivosEnCarpeta(rutaCarpetaInicial);
-        ruta = rutaCarpetaInicial;
+        //Creamos la instancia de la clase Pdf con la ruta del archivo:
+        var pdf = new Pdf(archivoAnalizando.nombreCompletoConRuta());
 
-        //Contamos los archivos para analizar porque si no hay archivos o no tienen las extensiones correctas no analizaremos nada.
-        var numArchivosParaAnalizar = contarArchivos(archivosParaAnalizar);
-        (numArchivosParaAnalizar + " archivos para analizar encontrados en \"" + ruta + "\".").log();
+        //En esta colección guardaremos el resultado de procesarPDF
+        //LLave: Número de página - Valor: String con el resultado de leer el QR
+        var resultadoProcesarPDF = new HashMap<Integer, String>();
 
-        //Entramos al análisis si hay archivos.
-        if (numArchivosParaAnalizar > 0) {
-
-            "Analizando archivos...".cabeceraDeLog().log();
-
-            //Analizamos los archivos:
-            return analizarArchivos(archivosParaAnalizar);
+        //Si el tamaño es mayor del que pone en la BD, se hará en disco y si no en memoria:
+        if (tamañoArchivo > tamañoMaxProcesarEnMemoria) {
+            ("Analizando " + archivoAnalizando.nombreConExtension() + " en disco" + " (" + tamañoArchivo +" MB)...").log();
+            resultadoProcesarPDF = procesarPDFEnDisco(pdf);
+            eliminarPNGsIntermedios();
+            "Hecho".log();
         }else {
-            return new ArrayList<ResultadosLectura>();
+            ("Analizando " + archivoAnalizando.nombreConExtension() + " en memoria" + " (" + tamañoArchivo +" MB)...").log();
+            resultadoProcesarPDF = procesarPDFEnMemoria(pdf);
+            "Hecho".log();
         }
 
-    }
+        //Almacenaremos aquí el número de las páginas del PDF que contengan un QR y los resultados de las lecturas:
+        var paginasQueContienenQR = resultadoProcesarPDF.listaValor(x -> x.getKey());
+        var resultadosLecturaQRs = resultadoProcesarPDF.listaValor(x -> x.getValue());
 
-    private Integer contarArchivos(List<File> archivosParaAnalizar) {
+        //Si paginasQueContienenQR está vacío significa que no se han encontrado QRs en el documento.
+        if (!paginasQueContienenQR.isEmpty()) {
+            //Dividimos el PDF original en diversos PDFs con las páginas que contienenQR
+            var rutasArchivosSeparados = pdf.dividirPDFPorNumerosDePagina(paginasQueContienenQR, (rutaCarpetaTemporal + "\\paginasSeparadas"));
 
-        var cuenta = 0;
-
-        for (var archivo : archivosParaAnalizar) {
-            var extension = archivo.extension();
-            if (extensiones.contains(extension)) {
-                cuenta++;
-            }
-        }
-
-        return cuenta;
-    }
-
-    private List<ResultadosLectura> analizarArchivos(List<File> archivos) throws IOException {
-
-        var resultadoFinal = new ArrayList<ResultadosLectura>();
-
-        for(File f : archivos) {
-
-            App.agregarRegistroLog(procesarQRLog);
-
-            //Movemos el archivo a nuestra carpeta.
-            var archivoAnalizando = new File(rutaCarpetaTemporal + "\\documentoEnProceso\\" + f.nombreConExtension());
-            f.renameTo(archivoAnalizando);
-            //Extraemos del archivo la info que necesitamos:
-            var nombreDelArchivo = archivoAnalizando.nombreConExtension();
-            Long tamañoArchivoBytes =  archivoAnalizando.length();
-            var tamañoArchivo = tamañoArchivoBytes.aDouble()/1000000; // dividimos entre 1000000 para pasarlo a MB
-
-            //Creamos la instancia de la clase Pdf con la ruta del archivo:
-            var pdf = new Pdf(archivoAnalizando.nombreCompletoConRuta());
-
-            //En esta colección guardaremos el resultado de procesarPDF
-            //LLave: Número de página - Valor: String(s) con el resultado de leer el QR
-            var resultadoProcesarPDF = new HashMap<Integer, String>();
-
-            //Si el tamaño es mayor del que pone en la BD, se hará en disco y si no en memoria:
-            if (tamañoArchivo > tamañoMaxProcesarEnMemoria) {
-                ("Analizando " + archivoAnalizando.nombreConExtension() + " en disco" + " (" + tamañoArchivo +" MB)...").log();
-                resultadoProcesarPDF = procesarPDFEnDisco(pdf);
-                eliminarPNGsIntermedios();
-                "Hecho".log();
-            }else {
-                ("Analizando " + archivoAnalizando.nombreConExtension() + " en memoria" + " (" + tamañoArchivo +" MB)...").log();
-                resultadoProcesarPDF = procesarPDFEnMemoria(pdf);
-                "Hecho".log();
-            }
-
-            //Almacenaremos aquí el número de las páginas del PDF que contengan un QR y los resultados de las lecturas:
-            var paginasQueContienenQR = resultadoProcesarPDF.listaValor(x -> x.getKey());
-            var resultadosLecturaQRs = resultadoProcesarPDF.listaValor(x -> x.getValue());
-
-            //Si paginasQueContienenQR está vacío significa que no se han encontrado QRs en el documento.
-            if (!paginasQueContienenQR.isEmpty()) {
-                //Dividimos el PDF original en diversos PDFs con las páginas que contienenQR
-                var rutasArchivosSeparados = pdf.dividirPDFPorNumerosDePagina(paginasQueContienenQR, (rutaCarpetaTemporal + "\\paginasSeparadas"));
-
-                if(paginasQueContienenQR.longitud() < rutasArchivosSeparados.longitud()) {
-                    "Primera(s) pagina(s) del PDF no contienen QR.".logAviso();
-                    var rutaArchivoAnalizando = archivoAnalizando.nombreCompletoConRuta();
-                    crearArchivosParaRevisarAviso(rutasArchivosSeparados[0], rutaArchivoAnalizando);
-                    rutasArchivosSeparados.remove(0);
-                }
-
-                for (int i = 0; i < rutasArchivosSeparados.longitud(); i++) {
-
-                    var ruta = rutasArchivosSeparados.get(i);
-                    String resultado;
-
-                    resultado = resultadosLecturaQRs.get(i);
-                    var resultadoLectura = new ResultadosLectura(ruta, resultado);
-                    resultadoFinal.add(resultadoLectura);
-
-                }
-
-                //Eliminamos el archivo de documentosAProcesar
-//                ("Eliminando " + archivoAnalizando.rutaCompleta() + "...").log();
-//                archivoAnalizando.delete();
-//                "Eliminado con éxito.".log();
-
-            }else {
-                ("No se han encontrado QRs en " + nombreDelArchivo).logError();
+            if(paginasQueContienenQR.longitud() < rutasArchivosSeparados.longitud()) {
+                "Primera(s) pagina(s) del PDF no contienen QR.".logAviso();
                 var rutaArchivoAnalizando = archivoAnalizando.nombreCompletoConRuta();
-                crearArchivoParaRevisarError(rutaArchivoAnalizando);
+                crearArchivosParaRevisarAviso(rutasArchivosSeparados[0], rutaArchivoAnalizando);
+                rutasArchivosSeparados.remove(0);
             }
 
+            for (int i = 0; i < rutasArchivosSeparados.longitud(); i++) {
+
+                var ruta = rutasArchivosSeparados.get(i);
+                String resultado;
+
+                resultado = resultadosLecturaQRs.get(i);
+                var resultadoLectura = new ResultadoLectura(ruta, resultado);
+                resultadoFinal.add(resultadoLectura);
+
+            }
+
+        }else {
+            ("No se han encontrado QRs en " + nombreDelArchivo).logError();
+            var rutaArchivoAnalizando = archivoAnalizando.nombreCompletoConRuta();
+            crearArchivoParaRevisarError(rutaArchivoAnalizando);
         }
 
-        "Fin Analizando archivos.".logDebug();
+        "Fin Analizando archivo.".logDebug();
         return resultadoFinal;
 
-    }
-
-    private List<ResultadosLectura> analizarArchivosPendientes(List<File> archivos) throws IOException {
-        return analizarArchivos(archivos);
-    }
-
-    private List<File> listarArchivosEnCarpeta(String rutaCarpeta) throws FileNotFoundException {
-
-        //Instanciamos la lista que retornaremos al final.
-        var archivos = new ArrayList<File>();
-
-        var carpeta = new File(rutaCarpeta);
-
-        //Comprobamos que la carpeta exista o no
-        if(!carpeta.exists()) {
-            "No se puede encontrar la carpeta introducida.".logError(carpeta.nombreCompletoConRuta());
-            "Fin servicio".cabeceraDeLog().log();
-            throw new FileNotFoundException();
-        }else {
-
-            //Recorremos los archivos de la carpeta y los añadimos a la lista que retornaremos al final.
-            for(File f : carpeta.listFiles()) {
-                if(extensiones.contains(f.extension())) {
-                    archivos.add(f);
-                }
-            }
-
-        }
-
-        return archivos;
     }
 
     private HashMap<Integer, String> procesarPDFEnDisco(Pdf pdf) throws IOException {
@@ -381,51 +284,6 @@ public class ProcesarQR implements ProcesarSincro {
         "QRs purgados con éxito.".logDebug();
 
         return QRValido;
-
-    }
-
-    private String crearCarpetaTemporal() throws Exception {
-
-        //C:\temp\pruebas\ResultadosTemporales
-
-        "Creando carpeta temporal...".logDebug();
-
-        var carpetaTemporal = new File(rutaCarpetaTemporal);
-
-        if(!carpetaTemporal.exists()) {
-            carpetaTemporal.mkdir();
-        }
-
-        //Checkeamos que la carpeta sea directorio y si no lo es lanzamos una excepción para que el usuario revise la configuración.
-        if(!carpetaTemporal.isDirectory()) {
-            "Comprueba la configuración introducida: ".logError();
-            throw new Exception("No se puede establecer la carpeta temporal en la siguiente ruta: \"" + carpetaTemporal + "\"");
-        }else {
-
-            //Creamos las carpetas necesarias dentro de la ruta temporal.
-
-            var pngTemporales = new File(rutaCarpetaTemporal + "\\PNGsTemporales");
-            pngTemporales.mkdir();
-
-            var documentosAProcesar = new File(rutaCarpetaTemporal + "\\documentoEnProceso");
-            documentosAProcesar.mkdir();
-
-            var paginasSeparadas = new File(rutaCarpetaTemporal + "\\paginasSeparadas");
-            paginasSeparadas.mkdir();
-
-            var revisar = new File(rutaCarpetaTemporal + "\\Revisar");
-            revisar.mkdir();
-
-            var revisarAviso = new File(rutaCarpetaTemporal + "\\Revisar\\Aviso");
-            revisarAviso.mkdir();
-
-            var revisarError = new File(rutaCarpetaTemporal + "\\Revisar\\Error");
-            revisarError.mkdir();
-
-        }
-
-        "Carpeta temporal creada con éxito".logDebug();
-        return rutaCarpetaTemporal;
 
     }
 
