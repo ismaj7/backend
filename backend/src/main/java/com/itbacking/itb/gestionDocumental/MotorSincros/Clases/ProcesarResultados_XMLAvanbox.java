@@ -1,8 +1,7 @@
 package com.itbacking.itb.gestionDocumental.MotorSincros.Clases;
 
 import com.itbacking.core.collection.Coleccion;
-import com.itbacking.db.connector.ConectorDb;
-import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados_Sincro;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -12,46 +11,53 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
-public class ProcesarResultados_XMLAvanbox implements ProcesarResultados_Sincro {
+public class ProcesarResultados_XMLAvanbox implements ProcesarResultados {
 
     private String rutaCarpetaResultado;
 
     @Override
-    public void procesarResultados(Map<String, Object> fila, List<ResultadosLectura> resultados) throws Exception {
+    public boolean procesarResultados(List<ResultadoLectura> resultados, Map<String, Object> sincronizacion) throws Exception {
 
         "Procesar resultados para Avanbox".cabeceraDeLog().log();
 
-        //Leemos la configuración de la base de datos:
-        "Leyendo configuración...".log();
-        var conf = fila.get("confProcesarResultado").aCadena().aObjeto(Coleccion.class);
-        leerConfiguracion(conf);
+        try {
 
-        //Leemos también de la otra columna la ruta temporal para eliminarla al final.
-        //No hace falta hacer comprobaciones porque esto ya lo hace ProcesarQR.java
-        var conf2 = fila.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
-        var rutaCarpetaTemporal = conf2.get("carpetaTemporal").aCadena();
-        "Configuración leída con éxito.".log();
+            var conf = sincronizacion.get("confProcesarResultado").aCadena().aObjeto(Coleccion.class);
 
-        "Creando carpeta de resultados...".log();
-        //Creamos la carpeta de resultado, cuya ruta la hemos obtenido de la BD:
-        crearCarpetaResultado();
-        "Carpeta creada con éxito.".log();
+            //Leemos la configuración de la base de datos:
+            "Leyendo configuración...".log();
+            leerConfiguracion(conf);
+            "Configuración leída con éxito.".log();
 
-        "Generando pares PDF-XML...".log();
-        //Recorremos los resultados teniendo en cuenta que en un mismo archivo puede haber más de un QR.
-        generarParesPdfXml(resultados);
-        "Pares generados.".log();
+            "Creando carpeta de resultados...".log();
+            //Creamos la carpeta de resultado, cuya ruta la hemos obtenido de la BD:
+            crearCarpetaResultado();
+            "Carpeta creada con éxito.".log();
 
-        rutaCarpetaResultado.log("Carpeta de resultados");
+            "Generando pares PDF-XML...".log();
+            //Recorremos los resultados teniendo en cuenta que en un mismo archivo puede haber más de un QR.
+            generarParesPdfXml(resultados);
+            "Pares generados.".log();
 
-        //Eliminamos el pdf de la carpeta documentos a procesar
-        limpiarCarpetadocumentoEnProceso(rutaCarpetaTemporal + "\\documentoEnProceso");
+            rutaCarpetaResultado.log("Carpeta de resultados");
 
-        "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
+            //Eliminamos el pdf de la carpeta documentos a procesar
+            var confProcesarSincro = sincronizacion.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
+            var rutaCarpetaTemporal = confProcesarSincro.get("carpetaTemporal").aCadena();
+            limpiarCarpetadocumentoEnProceso(rutaCarpetaTemporal + "\\documentoEnProceso");
+
+            "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
+
+            return true;
+        }catch (Exception e) {
+
+            "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
+            return false;
+        }
 
     }
 
-    private void generarParesPdfXml(List<ResultadosLectura> resultados) throws Exception {
+    private void generarParesPdfXml(List<ResultadoLectura> resultados) throws Exception {
 
         for (var resultado : resultados) {
 

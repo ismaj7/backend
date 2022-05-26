@@ -2,7 +2,6 @@ package com.itbacking.gestionDocumental;
 import com.itbacking.core.App;
 import com.itbacking.core.collection.Coleccion;
 import com.itbacking.itb.gestionDocumental.MotorSincros.Clases.MotorSincros;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 
@@ -14,15 +13,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 @EntityScan(
         basePackages = {"com.itbacking"},
-        basePackageClasses = { AppTest.class}
+        basePackageClasses = { MotorSincrosTest.class}
         )
 @SpringBootApplication(exclude = MongoAutoConfiguration.class) //Necesario para evitar el Autowiring de Mongo que hace sin que se pida Autowiring
-public class AppTest {
+public class MotorSincrosTest {
 
     MotorSincros motorSincros;
 
     public static void main(String[] args) throws Exception {
-        App.ejecutar(AppTest.class, args);
+        App.ejecutar(MotorSincrosTest.class, args);
 
     }
 
@@ -48,6 +47,7 @@ public class AppTest {
 
             motorSincros = new MotorSincros(parametros);
         }
+
         motorSincros.procesarSincronizaciones();
 
     }

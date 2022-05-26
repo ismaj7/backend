@@ -15,18 +15,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProcesarQR implements ProcesarSincro {
-
+public class ProcesarSincro_QR implements ProcesarSincro {
     private String rutaCarpetaTemporal;
     private List<String> extensiones;
     private Integer tamañoMaxProcesarEnMemoria;
-    private ProcesarQRLog procesarQRLog = new ProcesarQR.ProcesarQRLog();
+    private ProcesarQRLog procesarQRLog = new ProcesarSincro_QR.ProcesarQRLog();
 
     private Diccionario formatos = new Diccionario();
     @Override
-    public List<ResultadoLectura> analizarDocumento(File archivo, Map<String, Object> fila) throws Exception {
+    public List<ResultadoLectura> analizarDocumento(File archivo, Map<String, Object> sincronizacion) throws Exception {
 
-        var conf = fila.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
+        var conf = sincronizacion.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
         leerConfiguracion(conf);
 
         return analizarArchivo(archivo);

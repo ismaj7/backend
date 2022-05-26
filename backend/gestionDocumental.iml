@@ -39,7 +39,7 @@
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.9.0" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.9.8" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-web:5.1.5.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: com.itbacking:db:1.0.9" level="project" />
+    <orderEntry type="library" name="Maven: com.itbacking:db:1.0.12" level="project" />
     <orderEntry type="library" name="Maven: com.microsoft.sqlserver:mssql-jdbc:6.4.0.jre8" level="project" />
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:8.0.15" level="project" />
     <orderEntry type="library" name="Maven: javax.persistence:javax.persistence-api:2.2" level="project" />
@@ -185,7 +185,7 @@
     <orderEntry type="library" name="Maven: com.itbacking:code2d:1.0.1" level="project" />
     <orderEntry type="library" name="Maven: uk.org.okapibarcode:okapibarcode:0.2.9" level="project" />
     <orderEntry type="library" name="Maven: com.google.zxing:core:3.4.1" level="project" />
-    <orderEntry type="library" name="Maven: com.itbacking:notify:1.0.0" level="project" />
+    <orderEntry type="library" name="Maven: com.itbacking:notify:1.0.2" level="project" />
     <orderEntry type="library" name="Maven: com.sun.mail:jakarta.mail:2.0.1" level="project" />
     <orderEntry type="library" name="Maven: com.sun.activation:jakarta.activation:2.0.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpmime:4.5.7" level="project" />

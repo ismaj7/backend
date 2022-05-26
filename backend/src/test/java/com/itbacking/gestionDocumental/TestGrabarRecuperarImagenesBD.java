@@ -14,10 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
 
 //@RunWith(App.class)
@@ -25,7 +22,7 @@ import java.util.List;
 @EnableScheduling
 @EnableAsync
 @Service
-public class TestProyecto {
+public class TestGrabarRecuperarImagenesBD {
 
     private Conexion conexionGestionDocumental;
     private ConectorDb conectorDocumentos;

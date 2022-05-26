@@ -1,19 +1,14 @@
 package com.itbacking.itb.gestionDocumental.MotorSincros.Clases;
 
-import com.itbacking.core.collection.Coleccion;
-import com.itbacking.db.connector.ConectorDb;
-import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados_Sincro;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public class ProcesarResultados_GestionDocumental implements ProcesarResultados_Sincro {
+public class ProcesarResultados_GestionDocumental implements ProcesarResultados {
 
     @Override
-    public void procesarResultados(Map<String, Object> fila, List<ResultadosLectura> resultados) throws Exception {
-
+    public boolean procesarResultados(List<ResultadoLectura> resultados, Map<String, Object> fila) throws Exception {
+        return false;
     }
-
 }

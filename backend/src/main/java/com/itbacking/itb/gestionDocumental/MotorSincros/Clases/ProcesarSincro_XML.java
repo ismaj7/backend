@@ -7,11 +7,11 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-public class ProcesarXML implements ProcesarSincro {
+public class ProcesarSincro_XML implements ProcesarSincro {
 
     Coleccion parametros;
 
-    public ProcesarXML() {
+    public ProcesarSincro_XML() {
     }
 
     @Override
