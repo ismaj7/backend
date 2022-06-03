@@ -39,7 +39,7 @@
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.9.0" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.9.8" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-web:5.1.5.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: com.itbacking:db:1.0.12" level="project" />
+    <orderEntry type="library" name="Maven: com.itbacking:db:1.0.13" level="project" />
     <orderEntry type="library" name="Maven: com.microsoft.sqlserver:mssql-jdbc:6.4.0.jre8" level="project" />
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:8.0.15" level="project" />
     <orderEntry type="library" name="Maven: javax.persistence:javax.persistence-api:2.2" level="project" />

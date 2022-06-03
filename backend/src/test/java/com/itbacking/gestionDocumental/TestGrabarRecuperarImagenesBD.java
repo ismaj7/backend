@@ -31,27 +31,41 @@ public class TestGrabarRecuperarImagenesBD {
 
         asegurarConexion();
 
-        var archivo = Config.leerRecurso("La cosa está que trina.png");
+        var archivo = Config.leerRecurso("Imagen1.png");
 
         var documentoByteArray = archivo.aByteArray();
 
         var documento = new Coleccion();
-        documento.asignar("id", "prueba");
+        documento.asignar("id", "prueba1");
         documento.asignar("contenido", documentoByteArray);
 
         conectorDocumentos.ejecutarInsert(documento);
 
-        var condiciones = List.of(new Condicion("id", "prueba", OperadorCondicion.IGUAL));
+        var condiciones = List.of(new Condicion("id", "prueba1", OperadorCondicion.IGUAL));
 
-        var vuelta = conectorDocumentos.ejecutarSelect(null,condiciones);
+        var resultadoSQL = conectorDocumentos.ejecutarSelect(null,condiciones);
 
-        byte[] byteArrayVuelta = (byte[]) vuelta[0].get("contenido");
+        byte[] byteArrayVuelta = objetoAByteArray(resultadoSQL[0].get("contenido"));
 
-        var archivoDeSalida = new File("C:\\temp\\La Cosa Está Que Trina.png");
+        var archivoDeSalida = new File("C:\\temp\\Imagen1_Leída.png");
 
         var outputStream = new FileOutputStream(archivoDeSalida);
         outputStream.write(byteArrayVuelta);
         outputStream.close();
+
+    }
+
+    public byte[] objetoAByteArray(Object objeto) throws IOException {
+
+        return (byte[]) objeto;
+
+        // No consigo hacer esto funcionar
+//        var byteArrayOutputStream = new ByteArrayOutputStream();
+//        var objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+//        objectOutputStream.writeObject(objeto);
+//        objectOutputStream.flush();
+//
+//        return byteArrayOutputStream.toByteArray();
 
     }
 

@@ -1,7 +1,7 @@
 package com.itbacking.itb.gestionDocumental.MotorSincros.Clases;
 
 import com.itbacking.core.collection.Coleccion;
-import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarResultados;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarSalida;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -11,49 +11,44 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
-public class ProcesarResultados_XMLAvanbox implements ProcesarResultados {
+public class ProcesarSalida_XMLAvanbox implements ProcesarSalida {
 
     private String rutaCarpetaResultado;
 
     @Override
-    public boolean procesarResultados(List<ResultadoLectura> resultados, Map<String, Object> sincronizacion) throws Exception {
+    public boolean procesarSalida(List<ResultadoLectura> resultados, Map<String, Object> sincronizacion) throws Exception {
 
         "Procesar resultados para Avanbox".cabeceraDeLog().log();
 
+        var conf = sincronizacion.get("confProcesarResultado").aCadena().aObjeto(Coleccion.class);
+
+        //Leemos la configuración de la base de datos:
+        "Leyendo configuración...".log();
+        leerConfiguracion(conf);
+        "Configuración leída con éxito.".log();
+
+        "Creando carpeta de resultados...".log();
+        //Creamos la carpeta de resultado, cuya ruta la hemos obtenido de la BD:
+        crearCarpetaResultado();
+        "Carpeta creada con éxito.".log();
+
         try {
-
-            var conf = sincronizacion.get("confProcesarResultado").aCadena().aObjeto(Coleccion.class);
-
-            //Leemos la configuración de la base de datos:
-            "Leyendo configuración...".log();
-            leerConfiguracion(conf);
-            "Configuración leída con éxito.".log();
-
-            "Creando carpeta de resultados...".log();
-            //Creamos la carpeta de resultado, cuya ruta la hemos obtenido de la BD:
-            crearCarpetaResultado();
-            "Carpeta creada con éxito.".log();
 
             "Generando pares PDF-XML...".log();
             //Recorremos los resultados teniendo en cuenta que en un mismo archivo puede haber más de un QR.
             generarParesPdfXml(resultados);
             "Pares generados.".log();
 
-            rutaCarpetaResultado.log("Carpeta de resultados");
-
-            //Eliminamos el pdf de la carpeta documentos a procesar
-            var confProcesarSincro = sincronizacion.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
-            var rutaCarpetaTemporal = confProcesarSincro.get("carpetaTemporal").aCadena();
-            limpiarCarpetadocumentoEnProceso(rutaCarpetaTemporal + "\\documentoEnProceso");
-
-            "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
-
-            return true;
         }catch (Exception e) {
 
             "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
             return false;
         }
+
+        rutaCarpetaResultado.log("Carpeta de resultados");
+
+        "Fin Procesar resultados para Avanbox".cabeceraDeLog().log();
+        return true;
 
     }
 
@@ -62,7 +57,7 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados {
         for (var resultado : resultados) {
 
             //La ruta del archivo temporal que previamente ha generado MotorSincros y que contiene los QRs válidos:
-            var rutaPDFTemporal = resultado.getRutaArchivo();
+            var rutaPDFTemporal = resultado.obtenerRutaArchivo();
 
             //Lo que escribiremos en el archivo XML.
             var etiquetas=resultado.etiquetas;
@@ -110,7 +105,6 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados {
             if(xmlResultado.exists()) {
                 xmlResultado = cambiarNombre(xmlResultado);
             }
-
 
             var fileWriter = new FileWriter(xmlResultado);
             fileWriter.write(xmlContenido);
@@ -163,16 +157,6 @@ public class ProcesarResultados_XMLAvanbox implements ProcesarResultados {
         if(!carpetaResultado.isDirectory()) {
             "Comprueba la configuración introducida: ".logError();
             throw new Exception("No se puede establecer la carpeta de resultado en la siguiente ruta: \"" + rutaCarpetaResultado + "\"");
-        }
-
-    }
-
-    private void limpiarCarpetadocumentoEnProceso(String rutaCarpeta) throws IOException {
-
-        var carpetaDocumentoEnProceso = new File(rutaCarpeta);
-
-        for(var archivo : carpetaDocumentoEnProceso.listFiles()) {
-            archivo.delete();
         }
 
     }

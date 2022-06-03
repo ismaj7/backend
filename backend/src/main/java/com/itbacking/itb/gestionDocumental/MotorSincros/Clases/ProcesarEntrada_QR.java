@@ -5,8 +5,9 @@ import com.itbacking.core.App;
 import com.itbacking.core.collection.Coleccion;
 import com.itbacking.core.collection.Diccionario;
 import com.itbacking.core.model.RegistroLog;
-import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarSincro;
+import com.itbacking.itb.gestionDocumental.MotorSincros.Interfaces.ProcesarEntrada;
 import com.itbacking.pdf.Pdf;
+import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
 import java.io.*;
@@ -15,15 +16,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProcesarSincro_QR implements ProcesarSincro {
-    private String rutaCarpetaTemporal;
+public class ProcesarEntrada_QR implements ProcesarEntrada {
+    private String rutaCarpetaDeTrabajo;
     private List<String> extensiones;
     private Integer tamañoMaxProcesarEnMemoria;
-    private ProcesarQRLog procesarQRLog = new ProcesarSincro_QR.ProcesarQRLog();
-
     private Diccionario formatos = new Diccionario();
+
+    private ProcesarQRLog procesarQRLog = new ProcesarEntrada_QR.ProcesarQRLog();
+
     @Override
-    public List<ResultadoLectura> analizarDocumento(File archivo, Map<String, Object> sincronizacion) throws Exception {
+    public List<ResultadoLectura> procesarDocumentoEntrada(File archivo, Map<String, Object> sincronizacion) throws Exception {
 
         var conf = sincronizacion.get("confProcesarSincro").aCadena().aObjeto(Coleccion.class);
         leerConfiguracion(conf);
@@ -32,15 +34,16 @@ public class ProcesarSincro_QR implements ProcesarSincro {
 
     }
 
-    private List<ResultadoLectura> analizarArchivo(File archivo) throws IOException {
+    private List<ResultadoLectura> analizarArchivo(File archivo) throws Exception {
 
         var resultadoFinal = new ArrayList<ResultadoLectura>();
 
         App.agregarRegistroLog(procesarQRLog);
 
         //Movemos el archivo a nuestra carpeta.
-        var archivoAnalizando = new File(rutaCarpetaTemporal + "\\documentoEnProceso\\" + archivo.nombreConExtension());
+        var archivoAnalizando = new File(rutaCarpetaDeTrabajo + "\\documentoEnProceso\\" + archivo.nombreConExtension());
         archivo.renameTo(archivoAnalizando);
+
         //Extraemos del archivo la info que necesitamos:
         var nombreDelArchivo = archivoAnalizando.nombreConExtension();
         Long tamañoArchivoBytes =  archivoAnalizando.length();
@@ -51,28 +54,28 @@ public class ProcesarSincro_QR implements ProcesarSincro {
 
         //En esta colección guardaremos el resultado de procesarPDF
         //LLave: Número de página - Valor: String con el resultado de leer el QR
-        var resultadoProcesarPDF = new HashMap<Integer, String>();
+        var resultadoLeerPDF = new HashMap<Integer, String>();
 
         //Si el tamaño es mayor del que pone en la BD, se hará en disco y si no en memoria:
         if (tamañoArchivo > tamañoMaxProcesarEnMemoria) {
             ("Analizando " + archivoAnalizando.nombreConExtension() + " en disco" + " (" + tamañoArchivo +" MB)...").log();
-            resultadoProcesarPDF = procesarPDFEnDisco(pdf);
+            resultadoLeerPDF = procesarPDFEnDisco(pdf);
             eliminarPNGsIntermedios();
             "Hecho".log();
         }else {
             ("Analizando " + archivoAnalizando.nombreConExtension() + " en memoria" + " (" + tamañoArchivo +" MB)...").log();
-            resultadoProcesarPDF = procesarPDFEnMemoria(pdf);
+            resultadoLeerPDF = procesarPDFEnMemoria(pdf);
             "Hecho".log();
         }
 
         //Almacenaremos aquí el número de las páginas del PDF que contengan un QR y los resultados de las lecturas:
-        var paginasQueContienenQR = resultadoProcesarPDF.listaValor(x -> x.getKey());
-        var resultadosLecturaQRs = resultadoProcesarPDF.listaValor(x -> x.getValue());
+        var paginasQueContienenQR = resultadoLeerPDF.listaValor(x -> x.getKey());
+        var resultadosLecturaQRs = resultadoLeerPDF.listaValor(x -> x.getValue());
 
         //Si paginasQueContienenQR está vacío significa que no se han encontrado QRs en el documento.
         if (!paginasQueContienenQR.isEmpty()) {
             //Dividimos el PDF original en diversos PDFs con las páginas que contienenQR
-            var rutasArchivosSeparados = pdf.dividirPDFPorNumerosDePagina(paginasQueContienenQR, (rutaCarpetaTemporal + "\\paginasSeparadas"));
+            var rutasArchivosSeparados = pdf.dividirPDFPorNumerosDePagina(paginasQueContienenQR, rutaCarpetaDeTrabajo.combinarRuta(  "paginasSeparadas"));
 
             if(paginasQueContienenQR.longitud() < rutasArchivosSeparados.longitud()) {
                 "Primera(s) pagina(s) del PDF no contienen QR.".logAviso();
@@ -111,7 +114,7 @@ public class ProcesarSincro_QR implements ProcesarSincro {
         var lector = new LectorQR();
 
         //El método renderizarPDFEnDisco devuelve una lista de Strings con la ruta donde ha renderizado cada pagina:
-        var paginas = pdf.renderizarPDFEnDisco(rutaCarpetaTemporal + "\\PNGsTemporales", new Coleccion());
+        var paginas = pdf.renderizarPDFEnDisco(rutaCarpetaDeTrabajo.combinarRuta( "PNGsTemporales"), new Coleccion());
 
         //Almacenamos el número de página que se va a analizar (la primera ha de ser 0).
         var paginaAnalizada = 0;
@@ -206,10 +209,12 @@ public class ProcesarSincro_QR implements ProcesarSincro {
         var archivoOrigen = new File(rutaArchivoError);
         var nombreArchivo = archivoOrigen.nombreConExtension();
 
-        var rutaDestino = rutaCarpetaTemporal + "\\Revisar\\Error\\" + nombreArchivo;
+        var rutaDestino = rutaCarpetaDeTrabajo.combinarRuta("Revisar", "Error", nombreArchivo);
         var archivoDestino = new File(rutaDestino);
 
-        archivoOrigen.renameTo(archivoDestino);
+        if (!archivoDestino.exists()) {
+            FileUtils.moveFile(archivoOrigen, archivoDestino);
+        }
 
         //Generar log:
         var rutaLog = archivoDestino.nombreCompletoConRuta().izquierdaDeUltimaOcurrencia(".") + "_LOG.txt";
@@ -217,24 +222,28 @@ public class ProcesarSincro_QR implements ProcesarSincro {
 
     }
 
-    private void crearArchivosParaRevisarAviso(String rutaArchivoError, String rutaArchivoPadre) throws IOException {
+    private void crearArchivosParaRevisarAviso(String rutaArchivoError, String rutaArchivoPadre) throws Exception {
 
         //Mover el archivo que ha fallado
         var archivoOrigen = new File(rutaArchivoError);
         var nombreArchivo = archivoOrigen.nombreConExtension();
 
-        var rutaDestino = rutaCarpetaTemporal + "\\Revisar\\Aviso\\" + nombreArchivo;
+        var rutaDestino = rutaCarpetaDeTrabajo.combinarRuta("Revisar", "Aviso", nombreArchivo);
         var archivoDestino = new File(rutaDestino);
 
-        archivoOrigen.renameTo(archivoDestino);
+        if (!archivoDestino.exists()) {
+            FileUtils.moveFile(archivoOrigen, archivoDestino);
+        }
 
         //Mover el archivo padre
         var archivoPadreOrigen = new File(rutaArchivoPadre);
 
-        var rutaPadreDestino = rutaCarpetaTemporal + "\\Revisar\\Aviso\\" + archivoPadreOrigen.nombreConExtension();
+        var rutaPadreDestino = rutaCarpetaDeTrabajo.combinarRuta("Revisar", "Aviso", archivoPadreOrigen.nombreConExtension());
         var archivoPadreDestino = new File(rutaPadreDestino);
 
-        archivoPadreOrigen.renameTo(archivoPadreDestino);
+        if(!archivoPadreDestino.exists()) {
+            FileUtils.moveFile(archivoPadreOrigen, archivoPadreDestino);
+        }
 
         //Generar log.txt:
         var rutaLog = archivoDestino.nombreCompletoConRuta().izquierdaDeUltimaOcurrencia(".") + "_LOG.txt";
@@ -289,9 +298,9 @@ public class ProcesarSincro_QR implements ProcesarSincro {
     //Limpia los PNGs generados por el método procesarPDFEnDisco();
     private void eliminarPNGsIntermedios() {
 
-        var carpetaTemporal = new File(rutaCarpetaTemporal + "\\PNGsTemporales");
+        var carpetaDeTrabajo = new File(rutaCarpetaDeTrabajo + "\\PNGsTemporales");
 
-        for (var f : carpetaTemporal.listFiles()) {
+        for (var f : carpetaDeTrabajo.listFiles()) {
             if(f.extension().igual("png")) {
                 f.delete();
             }
@@ -303,8 +312,8 @@ public class ProcesarSincro_QR implements ProcesarSincro {
 
         conf.aCadena().log("Parametros");
 
-        if (conf.containsKey("carpetaTemporal")) {
-            rutaCarpetaTemporal = conf.get("carpetaTemporal").aCadena();
+        if (conf.containsKey("carpetaDeTrabajo")) {
+            rutaCarpetaDeTrabajo = conf.get("carpetaDeTrabajo").aCadena();
         }else {
             throw new Exception("No se ha establecido carpeta temporal en la configuración");
         }
